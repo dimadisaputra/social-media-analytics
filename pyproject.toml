@@ -1,0 +1,11 @@
+[project]
+name = "social-media-analytics"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "prefect>=3.6.13",
+    "proxyproviders>=0.2.1",
+    "python-dotenv>=1.2.1",
+]
