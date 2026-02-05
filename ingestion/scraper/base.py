@@ -10,8 +10,8 @@ class BaseScraper(ABC):
         pass
 
     @abstractmethod
-    async def get_post(self, post_id: str) -> Dict[str, Any]:
-        """Fetch a specific post's details."""
+    async def get_posts(self, user_id: str) -> List[Dict[str, Any]]:
+        """Fetch posts for a specific user."""
         pass
 
     @abstractmethod

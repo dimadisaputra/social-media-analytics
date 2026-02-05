@@ -14,3 +14,9 @@ wheels/
 
 # Data
 data/
+
+# SSH keys
+*.pub
+*.p8
+*.pem
+.snowflake/
