@@ -6,6 +6,15 @@ class Settings(BaseSettings):
     tiktok_browser: str
     tiktok_headless: bool
     webshare_api_key: str
+    
+    snowflake_account: str
+    snowflake_user: str
+    snowflake_private_key_path: str
+    snowflake_database: str = "SOCIAL_MEDIA_DW"
+    snowflake_schema: str = "BRONZE"
+    snowflake_warehouse: str = "COMPUTE_WH"
+    snowflake_role: str | None = None
+
     debug: bool = False
     log_level: str = "INFO"
 

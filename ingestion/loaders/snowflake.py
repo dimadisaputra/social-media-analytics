@@ -8,25 +8,24 @@ from cryptography.hazmat.backends import default_backend
 import snowflake.connector
 from loguru import logger
 from snowflake.connector.pandas_tools import write_pandas
+from config import settings
 
 class SnowflakeLoader:
     def __init__(self):
         self._conn = snowflake.connector.connect(
-            user=os.environ["SNOWFLAKE_USER"],
-            account=os.environ["SNOWFLAKE_ACCOUNT"],
-            private_key=self.load_private_key(),
-            warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
-            database=os.environ["SNOWFLAKE_DATABASE"],
-            schema=os.environ["SNOWFLAKE_SCHEMA"],
-            role=os.environ.get("SNOWFLAKE_ROLE"),
+            user=settings.snowflake_user,
+            account=settings.snowflake_account,
+            private_key=self.load_private_key(settings.snowflake_private_key_path),
+            warehouse=settings.snowflake_warehouse,
+            database=settings.snowflake_database,
+            schema=settings.snowflake_schema,
+            role=settings.snowflake_role,
         )
     
     @staticmethod
-    def load_private_key():
-        key_path = os.path.expanduser(
-            os.environ["SNOWFLAKE_PRIVATE_KEY_PATH"]
-        )
-        with open(key_path, "rb") as key_file:
+    def load_private_key(key_path: str):
+        path = os.path.expanduser(key_path)
+        with open(path, "rb") as key_file:
             return serialization.load_pem_private_key(
                 key_file.read(),
                 password=None,

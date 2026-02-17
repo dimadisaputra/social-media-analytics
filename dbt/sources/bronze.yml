@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: bronze  
+    database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+    schema: "{{ env_var('SNOWFLAKE_SCHEMA') }}"  
+    
+    tables:
+      - name: raw_social_events
+        description: "Raw social media events ingested from APIs"
+        columns:
+          - name: event_id
+            description: "UUID unique event identifier"
+            tests:
+              - unique
+              - not_null
+          - name: platform
+            description: "Social platform (TikTok, Instagram, etc)"
+          - name: username
+            description: "Username of user"
+          - name: entity_type
+            description: "Entity type: Post, Comment, etc"
+          - name: raw_payload
+            description: "Raw JSON payload from platform API"
+          - name: ingested_at
+            description: "Timestamp when data was ingested into Bronze layer"
+            tests:
+              - not_null
