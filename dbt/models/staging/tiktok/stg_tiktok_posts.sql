@@ -1,5 +1,4 @@
--- Model: stg_tiktok_posts
--- Deskripsi: Membersihkan dan memparsing data mentah TikTok dari Bronze layer
+-- models/staging/tiktok/stg_tiktok_posts.sql
 
 WITH raw_data AS (
     SELECT
@@ -10,15 +9,17 @@ WITH raw_data AS (
         raw_payload,
         ingested_at
     FROM {{ source('bronze', 'raw_social_events') }}
-    WHERE platform = 'TikTok' 
-      AND entity_type = 'Post'
+    WHERE platform = 'tiktok' 
+      AND entity_type = 'post'
 )
 
 SELECT
     -- Identifiers
     event_id,
     raw_payload:id::string AS post_id,
+    raw_payload:author:id::string AS user_id,
     username,
+    platform,
     
     -- Content Info
     raw_payload:desc::string AS post_description,
@@ -32,7 +33,7 @@ SELECT
     raw_payload:stats:shareCount::int AS share_count,
     raw_payload:stats:collectCount::int AS favorite_count,
     
-    -- Author Stats (Snapshot saat data diambil)
+    -- Author Stats
     raw_payload:authorStats:followerCount::int AS author_followers,
     raw_payload:authorStats:videoCount::int AS author_total_videos,
     

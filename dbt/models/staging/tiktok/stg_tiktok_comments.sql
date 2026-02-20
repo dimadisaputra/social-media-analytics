@@ -10,8 +10,8 @@ WITH raw_comments AS (
         raw_payload,
         ingested_at
     FROM {{ source('bronze', 'raw_social_events') }}
-    WHERE platform = 'TikTok' 
-      AND entity_type = 'Comment'
+    WHERE platform = 'tiktok' 
+      AND entity_type = 'comment'
 )
 
 SELECT

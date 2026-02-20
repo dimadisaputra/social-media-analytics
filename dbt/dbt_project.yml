@@ -19,8 +19,13 @@ clean-targets:
 
 models:
   social_media_analytics:
-    +materialized: table
     staging:
-      +schema: staging
+      +schema: silver
+      +materialized: view
     marts:
-      +schema: marts
+      +schema: gold
+      +materialized: table
+
+vars:
+  "dbt_date:start_date": "2024-01-01"
+  "dbt_date:end_date": "2030-12-31"
