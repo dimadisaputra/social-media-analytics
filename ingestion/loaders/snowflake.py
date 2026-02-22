@@ -18,7 +18,7 @@ class SnowflakeLoader:
             private_key=self.load_private_key(settings.snowflake_private_key_path),
             warehouse=settings.snowflake_warehouse,
             database=settings.snowflake_database,
-            schema=settings.snowflake_schema,
+            schema=settings.snowflake_bronze_schema,
             role=settings.snowflake_role,
         )
     
