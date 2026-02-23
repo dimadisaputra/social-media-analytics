@@ -22,6 +22,7 @@ SELECT
     platform,
 
     -- Content Info
+    CONCAT('https://www.instagram.com/p/', raw_payload:shortcode::string) AS post_url,
     raw_payload:caption::string                                 AS post_description,
     TO_TIMESTAMP_NTZ(raw_payload:date::int)                     AS created_at,
     raw_payload:__typename::string                              AS post_type,

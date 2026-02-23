@@ -8,6 +8,7 @@ WITH tiktok_posts AS (
         user_id,
         username,
         platform,
+        post_url,
         post_description,
         created_at,
         view_count,
@@ -26,6 +27,7 @@ instagram_posts AS (
         user_id,
         username,
         platform,
+        post_url,
         post_description,
         created_at,
         NULL::INT AS view_count,       -- Instagram does not expose view_count for photo/carousel posts
@@ -54,6 +56,7 @@ SELECT
     -- Degenerate Dimensions
     p.post_id           AS native_post_id,
     p.platform,
+    p.post_url,
     p.post_description,
 
     -- Metrics
