@@ -1,5 +1,4 @@
--- Model: stg_instagram_comments
--- Deskripsi: Parsing data komentar Instagram dari Bronze Layer
+-- models/staging/instagram/stg_instagram_comments.sql
 
 WITH raw_comments AS (
     SELECT

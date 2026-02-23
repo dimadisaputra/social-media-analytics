@@ -1,5 +1,4 @@
--- Model: stg_tiktok_comments
--- Deskripsi: Parsing data komentar TikTok dari Bronze Layer
+-- models/staging/tiktok/stg_tiktok_comments.sql
 
 WITH raw_comments AS (
     SELECT
