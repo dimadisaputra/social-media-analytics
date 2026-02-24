@@ -10,6 +10,7 @@ WITH tiktok_posts AS (
         platform,
         post_url,
         post_description,
+        NULL::string AS cover_image_url,
         created_at,
         view_count,
         like_count,
@@ -29,6 +30,7 @@ instagram_posts AS (
         platform,
         post_url,
         post_description,
+        cover_image_url,
         created_at,
         NULL::INT AS view_count,       -- Instagram does not expose view_count for photo/carousel posts
         like_count,
@@ -58,6 +60,7 @@ SELECT
     p.platform,
     p.post_url,
     p.post_description,
+    p.cover_image_url,
 
     -- Metrics
     p.view_count,
