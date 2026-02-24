@@ -114,9 +114,11 @@ class TiktokScraper(BaseScraper):
             videos = []
             async for video in user.videos(count=video_count):
                 videos.append(video.as_dict)
+                if len(videos) >= video_count:
+                    break
 
             logger.success(f"Fetched {len(videos)} videos for user: {user_id}")
-            return videos
+            return videos[:video_count]
 
         except Exception as e:
             logger.error(f"Error fetching posts for user '{user_id}': {e}")
@@ -145,9 +147,11 @@ class TiktokScraper(BaseScraper):
             comments = []
             async for comment in post.comments(count=comment_count):
                 comments.append(comment.as_dict)
+                if len(comments) >= comment_count:
+                    break
 
             logger.success(f"Fetched {len(comments)} comments for post ID: {post_id}")
-            return comments
+            return comments[:comment_count]
 
         except Exception as e:
             logger.error(f"Error fetching comments for post '{post_id}': {e}")

@@ -891,6 +891,15 @@ wheels = [
 ]
 
 [[package]]
+name = "graphql-core"
+version = "3.2.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/9b/037a640a2983b09aed4a823f9cf1729e6d780b0671f854efa4727a7affbe/graphql_core-3.2.7.tar.gz", hash = "sha256:27b6904bdd3b43f2a0556dad5d579bdfdeab1f38e8e8788e555bdcb586a6f62c", size = 513484, upload-time = "2025-11-01T22:30:40.436Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/14/933037032608787fb92e365883ad6a741c235e0ff992865ec5d904a38f1e/graphql_core-3.2.7-py3-none-any.whl", hash = "sha256:17fc8f3ca4a42913d8e24d9ac9f08deddf0a0b2483076575757f6c412ead2ec0", size = 207262, upload-time = "2025-11-01T22:30:38.912Z" },
+]
+
+[[package]]
 name = "graphviz"
 version = "0.21"
 source = { registry = "https://pypi.org/simple" }
@@ -2123,6 +2132,33 @@ wheels = [
 ]
 
 [[package]]
+name = "prefect-dbt"
+version = "0.7.16"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dbt-core" },
+    { name = "prefect" },
+    { name = "prefect-shell" },
+    { name = "sgqlc" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/10/1d/ef328d9b922f9f2a5ac0094adb025f78ea32e122b737a54ef4c1cbbe3e8f/prefect_dbt-0.7.16.tar.gz", hash = "sha256:ac0f9001272862bbcb7aa0946c18767d44d68b1e95a6a0a5e005dbfa3edddd4b", size = 84192, upload-time = "2026-01-26T16:06:44.566Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d8/88/3340c89a1af07596254b2a5f25b7dcd7f0a08adc341d165491e1de344977/prefect_dbt-0.7.16-py3-none-any.whl", hash = "sha256:2f2d620de2414600ca3387d9a915f72d6562952c2bf7a2a14b0ff4ae2213022a", size = 60973, upload-time = "2026-01-26T16:06:43.357Z" },
+]
+
+[[package]]
+name = "prefect-shell"
+version = "0.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "prefect" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/34/a83fd379d41746e88360da1886d7d27670d9b474987ded0692141ae00603/prefect_shell-0.3.2.tar.gz", hash = "sha256:b59a60eed1e6b5e5e7d49e7a2261c5fbe962684ce26c92ef875db2fbe6349188", size = 16443, upload-time = "2026-02-03T19:50:05.652Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/26/2a0c792618ad8b882c815840df7e6f24cbe0a07978dfd38e4bfb3606696c/prefect_shell-0.3.2-py3-none-any.whl", hash = "sha256:a7ed7480fd3f5d79a7b72ac886d1607a202c964dd9f6fcd12fff24d9415a688c", size = 11700, upload-time = "2026-02-03T19:50:04.733Z" },
+]
+
+[[package]]
 name = "proglog"
 version = "0.1.12"
 source = { registry = "https://pypi.org/simple" }
@@ -2930,6 +2966,18 @@ wheels = [
 ]
 
 [[package]]
+name = "sgqlc"
+version = "18"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "graphql-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/13/60/3b8c93b3d5df873bd13bc8fe0a4021d5f7442ca7ee6b98c5152dd55e18c7/sgqlc-18.tar.gz", hash = "sha256:a09f76fb69a2760523144f8d3acbf06a1b3710f63bf87fbac142d3538b1d639b", size = 245818, upload-time = "2026-02-06T19:56:23.957Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/96/8a5b972de8ede610aa088360927411b05c50ebcd669e52b0a3bfd1ed3ed9/sgqlc-18-py3-none-any.whl", hash = "sha256:7af53b5c1aab4602a98a36d6d32bd641e33f602b9b72468885f2505c59c536af", size = 86121, upload-time = "2026-02-06T19:56:22.07Z" },
+]
+
+[[package]]
 name = "shellingham"
 version = "1.5.4"
 source = { registry = "https://pypi.org/simple" }
@@ -3073,6 +3121,7 @@ dependencies = [
     { name = "pandas" },
     { name = "plotly" },
     { name = "prefect" },
+    { name = "prefect-dbt" },
     { name = "proxyproviders" },
     { name = "pyotp" },
     { name = "python-dotenv" },
@@ -3092,6 +3141,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.0.0,<3.0" },
     { name = "plotly", specifier = ">=6.5.2" },
     { name = "prefect", specifier = ">=3.6.13" },
+    { name = "prefect-dbt", specifier = ">=0.7.16" },
     { name = "proxyproviders", specifier = ">=0.2.1" },
     { name = "pyotp", specifier = ">=2.9.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },

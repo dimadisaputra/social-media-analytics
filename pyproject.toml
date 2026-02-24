@@ -13,6 +13,7 @@ dependencies = [
     "pandas>=2.0.0,<3.0",
     "plotly>=6.5.2",
     "prefect>=3.6.13",
+    "prefect-dbt>=0.7.16",
     "proxyproviders>=0.2.1",
     "pyotp>=2.9.0",
     "python-dotenv>=1.2.1",

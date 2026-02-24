@@ -420,23 +420,23 @@ async def social_media_ingestion(
 
 if __name__ == "__main__":
     # --- Run all platforms ---
-    # social_media_ingestion.serve(
-    #     name="social-media-ingestion-all",
-    #     parameters={
-    #         "platforms": {
-    #             "tiktok": {
-    #                 "target": "gibran_rakabuming",
-    #                 "video_count": 10,
-    #                 "comment_count": 10,
-    #             },
-    #             "instagram": {
-    #                 "target": "gibran_rakabuming",
-    #                 "post_count": 10,
-    #                 "comment_count": 10,
-    #             },
-    #         }
-    #     },
-    # )
+    social_media_ingestion.serve(
+        name="social-media-ingestion-all",
+        parameters={
+            "platforms": {
+                "tiktok": {
+                    "target": "gibran_rakabuming",
+                    "video_count": 10,
+                    "comment_count": 10,
+                },
+                "instagram": {
+                    "target": "gibran_rakabuming",
+                    "post_count": 10,
+                    "comment_count": 10,
+                },
+            }
+        },
+    )
 
     # --- Run TikTok only ---
     # social_media_ingestion.serve(
@@ -453,15 +453,15 @@ if __name__ == "__main__":
     # )
 
     # --- Run Instagram only ---
-    social_media_ingestion.serve(
-        name="social-media-ingestion-instagram",
-        parameters={
-            "platforms": {
-                "instagram": {
-                    "target": "gibran_rakabuming",
-                    "post_count": 10,
-                    "comment_count": 10,
-                },
-            }
-        },
-    )
+    # social_media_ingestion.serve(
+    #     name="social-media-ingestion-instagram",
+    #     parameters={
+    #         "platforms": {
+    #             "instagram": {
+    #                 "target": "gibran_rakabuming",
+    #                 "post_count": 10,
+    #                 "comment_count": 10,
+    #             },
+    #         }
+    #     },
+    # )
