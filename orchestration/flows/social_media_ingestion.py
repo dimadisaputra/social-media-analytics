@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional
 from prefect import flow, task
 from loguru import logger
 
+from prefect_dbt.cli.commands import DbtCoreOperation
+
 from ingestion.scraper.tiktok import TiktokScraper
 from ingestion.scraper.instagram import InstagramScraper
 from ingestion.loaders.snowflake import SnowflakeLoader
@@ -41,23 +43,13 @@ async def scrape_tiktok_data(
 ) -> Dict[str, Any]:
     """
     Scrape user profile, posts, and comments from TikTok.
-
-    Args:
-        user_id: TikTok username to scrape.
-        video_count: Number of videos to fetch.
-        comment_count: Number of comments to fetch per video.
-
-    Returns:
-        Dict with keys 'user', 'posts', and 'comments'.
     """
     scraper = TiktokScraper()
     await scraper.create_session()
 
-    data: Dict[str, Any] = {"user": None, "posts": [], "comments": []}
+    data: Dict[str, Any] = {"posts": [], "comments": []}
 
     try:
-        data["user"] = await scraper.get_user(user_id)
-
         posts = await scraper.get_posts(user_id, video_count)
         data["posts"] = posts
 
@@ -74,10 +66,7 @@ async def scrape_tiktok_data(
     finally:
         await scraper.cleanup()
 
-    logger.info(
-        f"[tiktok] Scrape complete — user: {user_id} | "
-        f"posts: {len(data['posts'])} | comments: {len(data['comments'])}"
-    )
+    logger.info(f"[tiktok] Scrape complete — user: {user_id} | posts: {len(data['posts'])} | comments: {len(data['comments'])}")
     return data
 
 
@@ -89,28 +78,17 @@ async def scrape_instagram_data(
 ) -> Dict[str, Any]:
     """
     Scrape user profile, posts, and comments from Instagram.
-
-    Args:
-        username: Instagram username to scrape.
-        post_count: Number of posts to fetch.
-        comment_count: Number of comments to fetch per post.
-
-    Returns:
-        Dict with keys 'user', 'posts', and 'comments'.
     """
     scraper = InstagramScraper()
     await scraper.create_session()
 
-    data: Dict[str, Any] = {"user": None, "posts": [], "comments": []}
+    data: Dict[str, Any] = {"posts": [], "comments": []}
 
     try:
-        data["user"] = await scraper.get_user(username)
-
         posts = await scraper.get_posts(username, post_count)
         data["posts"] = posts
 
         for post in posts:
-            # get_comments expects shortcode (e.g. from instagram.com/p/<shortcode>/)
             shortcode = post.get("shortcode")
             if not shortcode:
                 logger.warning(f"[instagram] Skipping post with missing shortcode for user: {username}")
@@ -124,10 +102,7 @@ async def scrape_instagram_data(
         if hasattr(scraper, "cleanup") and callable(scraper.cleanup):
             await scraper.cleanup()
 
-    logger.info(
-        f"[instagram] Scrape complete — user: {username} | "
-        f"posts: {len(data['posts'])} | comments: {len(data['comments'])}"
-    )
+    logger.info(f"[instagram] Scrape complete — user: {username} | posts: {len(data['posts'])} | comments: {len(data['comments'])}")
     return data
 
 
@@ -139,10 +114,6 @@ async def scrape_instagram_data(
 async def load_to_snowflake(platform: str, data: Dict[str, Any]) -> None:
     """
     Build events from scraped data and load them to the Snowflake bronze layer.
-
-    Args:
-        platform: Source platform key (must exist in PLATFORM_REGISTRY).
-        data: Scraped data dict with keys 'user', 'posts', and 'comments'.
     """
     registry_entry = PLATFORM_REGISTRY.get(platform)
     if not registry_entry:
@@ -164,18 +135,38 @@ async def load_to_snowflake(platform: str, data: Dict[str, Any]) -> None:
 
 
 # ---------------------------------------------------------------------------
+# dbt Transformation Task
+# ---------------------------------------------------------------------------
+
+@task(name="Run dbt Models")
+def run_dbt_models() -> None:
+    """
+    Run dbt models for the Silver (staging/intermediate) and Gold (marts) layers.
+    """
+    logger.info("Starting dbt run for Silver and Gold layers via prefect-dbt...")
+
+    # ✅ Fix 1: Use prefect_dbt.core (DbtCoreOperation imported above)
+    dbt_op = DbtCoreOperation(
+        commands=[
+            "dbt deps",
+            "dbt run"
+        ],
+        working_dir="dbt",
+        project_dir=".",
+    )
+
+    dbt_op.run()
+
+    logger.info("dbt run completed successfully.")
+
+
+# ---------------------------------------------------------------------------
 # Event Builders
 # ---------------------------------------------------------------------------
 
 def _build_tiktok_events(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Build normalized event dicts from raw TikTok scraped data.
-
-    Args:
-        data: Dict with keys 'user', 'posts', 'comments'.
-
-    Returns:
-        List of event dicts ready for Snowflake ingestion.
     """
     events = []
 
@@ -233,12 +224,6 @@ def _build_tiktok_events(data: Dict[str, Any]) -> List[Dict[str, Any]]:
 def _build_instagram_events(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Build normalized event dicts from raw Instagram scraped data.
-
-    Args:
-        data: Dict with keys 'user', 'posts', 'comments'.
-
-    Returns:
-        List of event dicts ready for Snowflake ingestion.
     """
     events = []
 
@@ -297,10 +282,9 @@ PLATFORM_REGISTRY["instagram"]["event_builder"] = _build_instagram_events
 
 
 # ---------------------------------------------------------------------------
-# Per-platform pipeline runner
+# Per-platform pipeline runner mapping
 # ---------------------------------------------------------------------------
 
-# Maps each platform key to its scrape task and the kwarg name for the target identifier
 _SCRAPER_TASK_MAP: Dict[str, Dict[str, Any]] = {
     "tiktok": {
         "task": scrape_tiktok_data,
@@ -315,37 +299,6 @@ _SCRAPER_TASK_MAP: Dict[str, Dict[str, Any]] = {
 }
 
 
-async def _run_platform(
-    platform: str,
-    target: str,
-    scrape_kwargs: Dict[str, Any],
-) -> None:
-    """
-    Run a single platform's scrape + load pipeline with isolated error handling.
-
-    Failures are caught and logged so sibling platforms are not affected.
-
-    Args:
-        platform: Platform key from PLATFORM_REGISTRY.
-        target: Username or user ID to scrape.
-        scrape_kwargs: Extra keyword args forwarded to the scrape task
-                       (e.g. video_count, post_count, comment_count).
-    """
-    task_meta = _SCRAPER_TASK_MAP.get(platform)
-    if not task_meta:
-        logger.warning(f"No scraper task registered for platform '{platform}' — skipping.")
-        return
-
-    scrape_task = task_meta["task"]
-    target_kwarg = task_meta["target_kwarg"]
-
-    try:
-        data = await scrape_task(**{target_kwarg: target}, **scrape_kwargs)
-        await load_to_snowflake(platform, data)
-    except Exception as e:
-        logger.error(f"[{platform}] Ingestion failed for target '{target}': {e}")
-
-
 # ---------------------------------------------------------------------------
 # Main Flow
 # ---------------------------------------------------------------------------
@@ -355,35 +308,12 @@ async def social_media_ingestion(
     platforms: Dict[str, Dict[str, Any]],
 ) -> None:
     """
-    Orchestrate scraping and loading for one or more social media platforms.
-
-    Each platform runs concurrently and independently — a failure in one
-    does not affect others.
+    Orchestrate scraping, loading to Bronze, and executing dbt models.
 
     Args:
         platforms: Dict keyed by platform name, each value is a config dict with:
             - 'target' (str, required): username or user ID to scrape
             - any platform-specific count kwargs (e.g. video_count, post_count, comment_count)
-
-    Example:
-        Run TikTok only::
-
-            social_media_ingestion(platforms={
-                "tiktok": {"target": "someuser", "video_count": 10, "comment_count": 5},
-            })
-
-        Run Instagram only::
-
-            social_media_ingestion(platforms={
-                "instagram": {"target": "someuser", "post_count": 10, "comment_count": 5},
-            })
-
-        Run all platforms::
-
-            social_media_ingestion(platforms={
-                "tiktok":    {"target": "someuser", "video_count": 10, "comment_count": 5},
-                "instagram": {"target": "someuser", "post_count": 10, "comment_count": 5},
-            })
     """
     if not platforms:
         logger.warning("No platforms provided — nothing to ingest.")
@@ -393,75 +323,110 @@ async def social_media_ingestion(
     if unknown:
         logger.warning(f"Unknown platform(s) will be skipped: {unknown}")
 
-    pipeline_tasks = []
+    scrape_futures = []
+
+    # 1. Submit all scraping tasks in parallel
     for platform, config in platforms.items():
         if platform not in PLATFORM_REGISTRY:
             continue
 
         target = config.get("target")
         if not target:
-            logger.warning(f"[{platform}] Missing 'target' in config — skipping.")
             continue
 
         scrape_kwargs = {k: v for k, v in config.items() if k != "target"}
-        logger.info(f"[{platform}] Queueing ingestion for target: {target}")
+        logger.info(f"[{platform}] Submitting parallel scrape for target: {target}")
 
-        pipeline_tasks.append(
-            _run_platform(platform=platform, target=target, scrape_kwargs=scrape_kwargs)
+        task_meta = _SCRAPER_TASK_MAP[platform]
+
+        future = task_meta["task"].submit(**{task_meta["target_kwarg"]: target}, **scrape_kwargs)
+        scrape_futures.append((platform, future))
+
+    # 2. Wait for all scrapers to finish and resolve their states
+    scrape_results = []
+    scrape_failures = []
+
+    for platform, future in scrape_futures:
+        try:
+            # .submit() returns a PrefectFuture, NOT a coroutine.
+            # Call future.result() directly — do NOT use `await` here.
+            data = future.result()
+            scrape_results.append((platform, data))
+        except Exception as e:
+            logger.error(f"[{platform}] Scrape task failed: {e}")
+            scrape_failures.append(platform)
+
+    # Guard — if ALL scrapers failed, there's nothing to load or transform.
+    # Abort early instead of running dbt on stale/empty data.
+    if not scrape_results:
+        logger.error(
+            f"All scrape tasks failed ({scrape_failures}). "
+            "Aborting pipeline — Snowflake load and dbt run will NOT execute."
+        )
+        raise RuntimeError(f"All scrapers failed: {scrape_failures}")
+
+    if scrape_failures:
+        logger.warning(
+            f"Some scrapers failed ({scrape_failures}) but {len(scrape_results)} succeeded. "
+            "Continuing with partial data."
         )
 
-    await asyncio.gather(*pipeline_tasks)
-    logger.info("All platform ingestion tasks completed.")
+    # 3. Submit Snowflake loading tasks in parallel
+    load_futures = []
+    for platform, data in scrape_results:
+        logger.info(f"[{platform}] Submitting load to Snowflake...")
+        future = load_to_snowflake.submit(platform, data)
+        load_futures.append((platform, future))
+
+    # 4. Wait for Snowflake loads to finish
+    load_failures = []
+    for platform, future in load_futures:
+        try:
+            future.result()
+        except Exception as e:
+            logger.error(f"[{platform}] Snowflake load failed: {e}")
+            load_failures.append(platform)
+
+    # Guard — if ALL loads failed, don't run dbt.
+    if len(load_failures) == len(load_futures):
+        logger.error(
+            "All Snowflake loads failed. "
+            "Aborting pipeline — dbt run will NOT execute."
+        )
+        raise RuntimeError(f"All Snowflake loads failed: {load_failures}")
+
+    logger.info("Bronze layer ingestion finished. Proceeding to dbt transformations...")
+
+    # 5. Run dbt models
+    try:
+        dbt_future = run_dbt_models.submit()
+        dbt_future.result()
+    except Exception as e:
+        logger.error(f"dbt pipeline encountered an error: {e}")
+        raise
+
+    logger.info("Social Media Analytics orchestration complete.")
 
 
 # ---------------------------------------------------------------------------
-# Entrypoint examples
+# Entrypoint
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    # --- Run all platforms ---
     social_media_ingestion.serve(
         name="social-media-ingestion-all",
         parameters={
             "platforms": {
                 "tiktok": {
                     "target": "gibran_rakabuming",
-                    "video_count": 10,
-                    "comment_count": 10,
+                    "video_count": 5,
+                    "comment_count": 5,
                 },
                 "instagram": {
                     "target": "gibran_rakabuming",
-                    "post_count": 10,
-                    "comment_count": 10,
+                    "post_count": 5,
+                    "comment_count": 5,
                 },
             }
         },
     )
-
-    # --- Run TikTok only ---
-    # social_media_ingestion.serve(
-    #     name="social-media-ingestion-tiktok",
-    #     parameters={
-    #         "platforms": {
-    #             "tiktok": {
-    #                 "target": "gibran_rakabuming",
-    #                 "video_count": 10,
-    #                 "comment_count": 10,
-    #             },
-    #         }
-    #     },
-    # )
-
-    # --- Run Instagram only ---
-    # social_media_ingestion.serve(
-    #     name="social-media-ingestion-instagram",
-    #     parameters={
-    #         "platforms": {
-    #             "instagram": {
-    #                 "target": "gibran_rakabuming",
-    #                 "post_count": 10,
-    #                 "comment_count": 10,
-    #             },
-    #         }
-    #     },
-    # )
