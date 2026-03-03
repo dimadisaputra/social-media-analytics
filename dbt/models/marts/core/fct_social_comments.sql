@@ -63,6 +63,7 @@ all_comments AS (
     SELECT * FROM tiktok
     UNION ALL
     SELECT * FROM instagram
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY comment_key ORDER BY ingested_at DESC) = 1
 ),
 
 -- Pull pre-computed Cortex scores from the intermediate layer.

@@ -45,6 +45,7 @@ all_posts AS (
     SELECT * FROM tiktok_posts
     UNION ALL
     SELECT * FROM instagram_posts
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY platform, post_id ORDER BY ingested_at DESC) = 1
 )
 
 SELECT

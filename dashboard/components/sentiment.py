@@ -109,26 +109,42 @@ def render_sentiment_overview(df, df_comments, df_sent_sum):
     # ── Top Posts by Sentiment ──
     st.markdown('<div class="section-title" style="margin-top:16px;">🏆 Top Posts by Sentiment</div>', unsafe_allow_html=True)
     
-    top_pos_key = df_sent_sum.loc[df_sent_sum["POSITIVE_COUNT"].idxmax(), "POST_KEY"] if df_sent_sum["POSITIVE_COUNT"].max() > 0 else None
-    top_neu_key = df_sent_sum.loc[df_sent_sum["NEUTRAL_COUNT"].idxmax(), "POST_KEY"] if df_sent_sum["NEUTRAL_COUNT"].max() > 0 else None
-    top_neg_key = df_sent_sum.loc[df_sent_sum["NEGATIVE_COUNT"].idxmax(), "POST_KEY"] if df_sent_sum["NEGATIVE_COUNT"].max() > 0 else None
+    # AGGREGATE by post_key first (since df_sent_sum is at grain post_key + date)
+    df_post_total = (
+        df_sent_sum.groupby("POST_KEY")
+        .agg(POS=("POSITIVE_COUNT","sum"),
+             NEU=("NEUTRAL_COUNT","sum"),
+             NEG=("NEGATIVE_COUNT","sum"),
+             SCORED=("SCORED_COMMENTS","sum"))
+        .reset_index()
+    )
+
+    top_pos_key = df_post_total.loc[df_post_total["POS"].idxmax(), "POST_KEY"] if not df_post_total.empty and df_post_total["POS"].max() > 0 else None
+    top_neu_key = df_post_total.loc[df_post_total["NEU"].idxmax(), "POST_KEY"] if not df_post_total.empty and df_post_total["NEU"].max() > 0 else None
+    top_neg_key = df_post_total.loc[df_post_total["NEG"].idxmax(), "POST_KEY"] if not df_post_total.empty and df_post_total["NEG"].max() > 0 else None
 
     cols = st.columns(3)
     
     cards = [
-        ("Most Positive", top_pos_key, "POSITIVE_COUNT", "sb-positive", "Positive"),
-        ("Most Neutral", top_neu_key, "NEUTRAL_COUNT", "sb-neutral", "Neutral"),
-        ("Most Negative", top_neg_key, "NEGATIVE_COUNT", "sb-negative", "Negative"),
+        ("Most Positive", top_pos_key, "POS", "sb-positive", "Positive"),
+        ("Most Neutral", top_neu_key, "NEU", "sb-neutral", "Neutral"),
+        ("Most Negative", top_neg_key, "NEG", "sb-negative", "Negative"),
     ]
 
     for col, (title, post_key, metric_col, badge_class, label) in zip(cols, cards):
         with col:
             if post_key:
-                post = df[df["POST_KEY"] == post_key].iloc[0]
-                sent_stats = df_sent_sum[df_sent_sum["POST_KEY"] == post_key].iloc[0]
+                # Find post details from filtered main df
+                matches = df[df["POST_KEY"] == post_key]
+                if matches.empty:
+                    st.markdown(f'<div class="card" style="height:100%;"><div class="card-title">{title}</div><div style="font-size:13px;color:#9CA3AF;margin-top:20px;">No platform data.</div></div>', unsafe_allow_html=True)
+                    continue
+                
+                post = matches.iloc[0]
+                sent_stats = df_post_total[df_post_total["POST_KEY"] == post_key].iloc[0]
                 
                 metric_val = int(sent_stats[metric_col] or 0)
-                total_scored = int(sent_stats["SCORED_COMMENTS"] or 1)
+                total_scored = int(sent_stats["SCORED"] or 1)
                 metric_pct = (metric_val / total_scored) * 100 if total_scored > 0 else 0
 
                 platform = str(post.get("PLATFORM", "")).lower()
