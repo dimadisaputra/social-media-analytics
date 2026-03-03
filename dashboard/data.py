@@ -7,14 +7,32 @@ from cryptography.hazmat.primitives import serialization
 
 @st.cache_resource
 def init_connection():
-    path = os.path.expanduser(os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH"))
-    with open(path, "rb") as f:
-        p_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+    # Coba ambil isi private key langsung dari environment variable
+    private_key_content = os.getenv("SNOWFLAKE_PRIVATE_KEY_CONTENT")
+    
+    if private_key_content:
+        # Jika dijalankan di Streamlit Cloud
+        # Terkadang line break ter-escape menjadi text "\\n", kita kembalikan menjadi newline sesungguhnya
+        private_key_content = private_key_content.replace("\\n", "\n")
+        key_bytes = private_key_content.encode('utf-8')
+    else:
+        # Fallback untuk dijalankan di lokal (tetap membaca dari file path)
+        path = os.path.expanduser(os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH"))
+        with open(path, "rb") as f:
+            key_bytes = f.read()
+
+    p_key = serialization.load_pem_private_key(
+        key_bytes, 
+        password=None, 
+        backend=default_backend()
+    )
+    
     pkb = p_key.private_bytes(
         encoding=serialization.Encoding.DER,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
+    
     return snowflake.connector.connect(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         user=os.getenv("SNOWFLAKE_USER"),
