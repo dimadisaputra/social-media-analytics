@@ -53,7 +53,7 @@ WITH tiktok_comments AS (
     FROM {{ ref('stg_tiktok_comments') }}
 
     {% if is_incremental() %}
-    WHERE ingested_at > (SELECT MAX(ingested_at) FROM {{ this }})
+    WHERE ingested_at > (SELECT COALESCE(MAX(ingested_at), '1970-01-01'::TIMESTAMP) FROM {{ this }} WHERE platform = 'tiktok')
     {% endif %}
 
 ),
@@ -69,7 +69,7 @@ instagram_comments AS (
     FROM {{ ref('stg_instagram_comments') }}
 
     {% if is_incremental() %}
-    WHERE ingested_at > (SELECT MAX(ingested_at) FROM {{ this }})
+    WHERE ingested_at > (SELECT COALESCE(MAX(ingested_at), '1970-01-01'::TIMESTAMP) FROM {{ this }} WHERE platform = 'instagram')
     {% endif %}
 
 ),

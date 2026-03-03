@@ -21,7 +21,7 @@ def init_connection():
         private_key=pkb,
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=os.getenv("SNOWFLAKE_DATABASE"),
-        schema="GOLD_DEV",
+        schema=os.getenv("SNOWFLAKE_GOLD_SCHEMA"),
     )
 
 @st.cache_data(ttl=600)
